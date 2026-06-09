@@ -231,7 +231,7 @@ Historical forward returns in the dashboard heatmap are conditional on phase —
 
 **Early Cycle** — With a much larger sample (n = 10 per ticker at 3/6/12 months), recoveries have been the most rewarding phase historically: NVDA averaged roughly +31% at 3 months and **+120%** at 12 months; MU and MRVL posted solid double-digit gains at shorter horizons and **+39–57%** at 12 months. Names tend to re-rate aggressively when the model transitions from below-zero index levels back into expansion.
 
-**Downturn** — Counter-intuitively, average forward returns during classified downturns in this backtest are also positive (NVDA ~+99% at 12 months, n = 12). That largely reflects buying recoveries *from* cycle troughs rather than smooth returns *through* contraction. Downturn labels mark stress in the model inputs, not necessarily the moment of maximum equity downside.
+**Downturn** — Counter-intuitively, average forward returns during classified downturns in this backtest are also positive (NVDA ~+102% at 12 months, n = 12). That largely reflects buying recoveries *from* cycle troughs rather than smooth returns *through* contraction. Downturn labels mark stress in the model inputs, not necessarily the moment of maximum equity downside.
 
 **Practical takeaway:** At today's Mid Cycle reading, the heatmap does not point to the same magnitude of upside that Early Cycle episodes delivered historically. Lean inventory is a tailwind, but the extreme equipment growth reading argues against extrapolating mid-cycle returns indefinitely — particularly for names already pricing in a strong capex and AI spending narrative (NVDA) versus memory-levered names that may respond differently to the inventory signal (MU, MRVL).
 
@@ -242,7 +242,7 @@ Phase-level forward returns are only as reliable as the number of historical qua
 | Phase | Typical n per cell | Comment |
 |-------|-------------------|---------|
 | **Early Cycle** | 10–13 | Reasonable for directional comparison across horizons |
-| **Downturn** | 12–13 | Similarly usable, with the caveat that trough-buying dominates long-horizon averages |
+| **Downturn** | 10 | Similarly usable, with the caveat that trough-buying dominates long-horizon averages |
 | **Mid Cycle** | **1–3** | Insufficient for robust inference; 12-month cells are effectively anecdotal |
 
 Conclusions drawn from Mid Cycle cells should be treated as illustrative. Early Cycle and Downturn statistics carry more weight in this dataset, but still reflect a limited fundamental history (~40 indicator quarters after annual backfill) and a single regime of AI-driven semiconductor demand that may not repeat.
