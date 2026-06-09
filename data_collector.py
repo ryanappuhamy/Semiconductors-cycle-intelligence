@@ -239,17 +239,19 @@ def fetch_daily_prices(
 
 
 def latest_reported_quarter() -> pd.Timestamp | None:
-    """Most recent calendar quarter with reported (non-estimated) quarterly filings."""
-    quarter_dates: list[pd.Timestamp] = []
+    """Latest quarter with broad quarterly filing coverage (min of per-ticker report dates)."""
+    latest_per_ticker: list[pd.Timestamp] = []
     for ticker in EQUIPMENT_TICKERS:
         reported = _line_item_series(ticker, "income", REVENUE_ROWS, freq="quarterly")
-        quarter_dates.extend(reported.dropna().index.tolist())
+        if not reported.empty:
+            latest_per_ticker.append(reported.index.max())
     for ticker in ("MU", "TXN"):
         reported = _line_item_series(ticker, "balance", INVENTORY_ROWS, freq="quarterly")
-        quarter_dates.extend(reported.dropna().index.tolist())
-    if not quarter_dates:
+        if not reported.empty:
+            latest_per_ticker.append(reported.index.max())
+    if not latest_per_ticker:
         return None
-    return pd.Timestamp(max(quarter_dates))
+    return pd.Timestamp(min(latest_per_ticker))
 
 
 def collect_all() -> dict[str, pd.DataFrame | pd.Timestamp | None]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 PHASES = ("Early Cycle", "Mid Cycle", "Late Cycle", "Downturn")
@@ -29,24 +30,38 @@ def composite_index(indicators: pd.DataFrame) -> pd.Series:
     return index
 
 
-def classify_phase(index_level: float, direction: float) -> str:
+def classify_phase(
+    index_level: float,
+    direction: float,
+    prior_level: float | None = None,
+) -> str:
     """
-    Classify a quarter using composite index level and quarter-over-quarter change.
+    Classify a quarter using composite index level, QoQ direction, and prior level.
 
-    Early Cycle  — recovering from trough (low level, positive direction)
-    Mid Cycle    — expansion (elevated level, non-negative direction)
-    Late Cycle   — peak / rollover (elevated level, negative direction)
-    Downturn     — contraction (low level, negative direction)
+    Late Cycle uses the *prior* quarter's elevation when direction turns negative,
+    because sharp rollovers often pull the index below zero in the same quarter.
+
+    Early Cycle  — recovering from trough (prior below 0, direction positive)
+    Mid Cycle    — expansion (elevated and improving)
+    Late Cycle   — peak / rollover (elevated prior level, negative direction)
+    Downturn     — contraction (not elevated, negative direction)
     """
-    elevated = index_level >= 0.0
+    if prior_level is None or not np.isfinite(prior_level):
+        prior_level = index_level
+
+    if not np.isfinite(direction):
+        return "Mid Cycle" if index_level >= 0 else "Early Cycle"
+
+    was_elevated = prior_level >= 0.0
+    is_elevated = index_level >= 0.0
     improving = direction >= 0.0
 
-    if elevated and improving:
-        return "Mid Cycle"
-    if elevated and not improving:
+    if was_elevated and not improving:
         return "Late Cycle"
-    if not elevated and improving:
-        return "Early Cycle"
+    if is_elevated and improving:
+        return "Mid Cycle"
+    if not was_elevated and improving:
+        return "Early Cycle" if index_level < 0 else "Mid Cycle"
     return "Downturn"
 
 
@@ -54,19 +69,15 @@ def classify_series(indicators: pd.DataFrame) -> pd.DataFrame:
     """Add composite index, direction, and phase labels to indicator frame."""
     idx = composite_index(indicators)
     direction = idx.diff()
+    prior = idx.shift(1)
+
     phases = [
-        classify_phase(level, dir_)
-        for level, dir_ in zip(idx, direction, strict=False)
+        classify_phase(level, dir_, prior_level=prev)
+        for level, dir_, prev in zip(idx, direction, prior, strict=False)
     ]
 
     out = indicators.copy()
     out["cycle_index"] = idx
     out["cycle_direction"] = direction
     out["phase"] = phases
-    # First quarter has no direction — label from level only
-    if len(out) > 0:
-        first_level = out["cycle_index"].iloc[0]
-        out.iloc[0, out.columns.get_loc("phase")] = (
-            "Mid Cycle" if first_level >= 0 else "Early Cycle"
-        )
     return out.dropna(subset=["cycle_index"])

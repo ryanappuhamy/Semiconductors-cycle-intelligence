@@ -1,93 +1,15 @@
-# Semiconductor Cycle Brief – Q4 2025
+## Semiconductor Cycle Brief (Local Fallback)
 
-**As of:** December 31, 2025  
-**Cycle Phase:** Mid Cycle (Index: 0.743)
-
----
+ANTHROPIC_API_KEY not set — showing template from computed data.
 
 ## Current Phase Assessment
-
-The semiconductor sector has transitioned into **Mid Cycle** territory with a cycle index of 0.743, marking a strong sequential improvement from Q3 2025's Downturn reading (-0.198). The quarter-over-quarter directional momentum of 0.941 signals robust cyclical acceleration. This represents a significant inflection from the volatile Q4 2024 through Q3 2025 period, which saw three phase transitions across just four quarters.
-
-The current Mid Cycle designation indicates demand normalization and inventory digestion completion, though the sector has not yet entered potential overheating territory (Late Cycle).
-
----
+Phase: Mid Cycle
+Cycle Index: 0.74
+Direction (QoQ): +0.94
 
 ## Key Indicator Readings
+- Equipment Revenue Growth Z: 2.12
+- Inventory/Revenue Z (inverted): -1.19
+- SOXX vs QQQ Momentum Z: 0.85
 
-**Equipment Revenue Growth:** +2.12σ (strongly elevated)  
-- WFE spending is significantly above historical mean, confirming genuine capex recovery and capacity expansion
-- This is the strongest leading indicator in the composite
-
-**Inventory-to-Revenue Ratio:** -1.19σ (lean inventories)  
-- Channel inventories are 1.2 standard deviations below normal
-- Supports pricing power and reduces risk of destocking headwinds
-- Validates transition from correction phase to expansion
-
-**SOXX Relative Momentum:** +0.85σ (outperforming)  
-- Sector exhibiting solid relative strength vs. broader market
-- Confirms market participants pricing in recovery thesis
-
----
-
-## Historical Context
-
-The recent phase history reveals unusual volatility:
-- **Q4 2024:** Downturn (-1.041) – cycle trough
-- **Q1 2025:** Early Cycle recovery (-0.564)
-- **Q2 2025:** Brief Mid Cycle touch (0.407)
-- **Q3 2025:** Unexpected reversion to Downturn (-0.198)
-- **Q4 2025:** Current Mid Cycle (0.743) – strongest reading in available history
-
-This whipsaw pattern from Q2-Q4 2025 suggests either measurement volatility or a false start followed by genuine recovery. The current 0.743 reading is significantly higher than Q2's 0.407, suggesting more sustainable momentum this time.
-
-**Critical Data Limitation:** Mid Cycle forward return samples are extremely thin (n=1-3 observations), creating low statistical confidence in historical benchmarks compared to Downturn (n=12-13) and Early Cycle (n=10) phases.
-
----
-
-## Key Risks
-
-1. **Statistical Noise in Phase Classification:** The Q2→Q3→Q4 2025 sequence (Mid→Down→Mid) raises questions about indicator stability or whether macro crosscurrents are creating false signals
-
-2. **Limited Mid Cycle Precedent:** Only 1-3 historical observations for Mid Cycle returns significantly undermines predictive confidence. The single 12-month observation shows -25% to -35% returns, though this is statistically meaningless
-
-3. **Late Cycle Transition Risk:** Equipment spending at +2.1σ suggests potential overinvestment. Historical cycles show Mid→Late→Downturn progression; current strength could age quickly
-
-4. **Macro Divergence:** If the 2025 phase volatility reflects structural market changes (AI-driven investment patterns, geopolitical supply chain shifts), historical return distributions may not apply
-
----
-
-## 6-12 Month Outlook
-
-**Base Case (60% probability):** Cycle continues maturing through H1 2026, transitioning to Late Cycle by mid-year. Equipment spending normalizes from current elevated levels. Sector remains constructive but returns moderate as easiest gains captured.
-
-**Bull Case (25% probability):** AI/HPC demand sustainably extends cycle duration. Current Mid Cycle phase persists through 2026 with inventory remaining lean and pricing favorable. Would represent structural departure from historical 2-3 year cycles.
-
-**Bear Case (15% probability):** Q3 2025 Downturn reading was accurate signal; Q4 improvement proves temporary. Equipment spending at +2σ represents peak, leading to rapid Late Cycle→Downturn transition by Q2 2026.
-
-**Expected 6-month horizon:** Modest positive returns (mid-single digits to low-teens) as momentum sustains but valuation multiples compress from cycle-peak levels.
-
----
-
-## Positioning Implications (NVDA, MU, MRVL)
-
-### Data Caveats
-Mid Cycle historical returns are based on 1-3 observations only. Early Cycle data (n=10) provides more robust comparison as the most recent confirmed phase (Q1 2025).
-
-### **NVDA – OVERWEIGHT**
-- **Mid Cycle 3M/6M:** +5.1% / +33.3% (weak sample)
-- **Early Cycle 3M/6M/12M:** +30.5% / +59.0% / +119.7% (n=10)
-- **Rationale:** Demonstrated highest beta to cycle inflections across all phases. If current Mid Cycle sustains, 6-month upside appears favorable (~30%+ range). AI infrastructure tailwinds provide idiosyncratic support beyond cycle mechanics
-- **Risk:** Most vulnerable to Late Cycle transition given valuation sensitivity
-
-### **MU – OVERWEIGHT** 
-- **Mid Cycle 3M/6M:** +12.7% / +74.3% (n=2-3)
-- **Early Cycle profile:** +8.8% / +19.3% / +56.9%
-- **Rationale:** Memory pricing inflection coincides with lean inventories (-1.19σ). HBM transition creates mix benefit. Limited Mid Cycle sample shows strongest 6M performance (+74%), though statistically unreliable
-- **Risk:** Memory sector historically volatile; single 12M Mid Cycle observation showed -34.7%
-
-### **MRVL – MARKET WEIGHT**
-- **Mid Cycle 3M/6M:** +9.6% / +31.2% (n=2-3)
-- **Early Cycle profile:** +14.4% / +19.0% / +38.9%
-- **Rationale:** Data center connectivity play with AI exposure, but lower cyclical beta than NVDA/MU. Returns appear adequate but not compelling versus risk. Limited statistical edge in current phase
-- **Risk:** Lowest conviction given minimal performance differentiation and thin
+Set ANTHROPIC_API_KEY to enable Claude-generated analysis.

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 import matplotlib.dates as mdates
@@ -205,7 +204,7 @@ def create_dashboard(
                 alpha=0.92,
             )
         ax_indicator_ts.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.7)
-    ax_indicator_ts.set_ylim(-3, 3)
+    ax_indicator_ts.set_ylim(-2.8, 2.8)
 
     ax_indicator_ts.set_title(
         "Individual Cycle Indicators (Z-Scores; inventory clipped to ±3)",
@@ -287,6 +286,7 @@ def create_dashboard(
     ax_current_card.axis("off")
     if not classified.empty:
         status_row = _status_row(classified, data_as_of)
+        as_of_quarter = pd.Timestamp(status_row.name).strftime("%Y-%m-%d")
         card_lines = [
             "CURRENT CYCLE STATUS",
             "",
@@ -295,7 +295,7 @@ def create_dashboard(
             f"Direction:   {status_row.get('cycle_direction', float('nan')):+.2f} (QoQ)",
             "",
             f"Quarters:    {len(classified)}",
-            f"As of:       {date.today().strftime('%Y-%m-%d')}",
+            f"As of:       {as_of_quarter}",
         ]
         ax_current_card.text(
             0.06,

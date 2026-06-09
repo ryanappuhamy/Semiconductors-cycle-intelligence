@@ -149,25 +149,61 @@ Console summary from a recent run:
 
 ```
 [3/5] Classifying cycle phases...
-  Current phase: Late Cycle
-  Cycle index: 0.40
+  Current phase: Mid Cycle
+  Cycle index: 0.74
 
 [4/5] Computing forward returns by phase...
-     phase ticker  horizon_months  avg_forward_return  n_obs
-Late Cycle   MRVL               3            0.166407      1
-Late Cycle     MU               3            0.184198      1
-Late Cycle   NVDA               3           -0.064829      1
+      phase ticker  horizon_months  avg_forward_return  n_obs
+   Downturn   MRVL               3           -0.005608     10
+   Downturn   MRVL               6            0.107061     10
+   Downturn   MRVL              12            0.346217     10
+   Downturn     MU               3            0.032374     10
+   Downturn     MU               6            0.155046     10
+   Downturn     MU              12            0.584970     10
+   Downturn   NVDA               3            0.108105     10
+   Downturn   NVDA               6            0.383845     10
+   Downturn   NVDA              12            1.020781     10
+Early Cycle   MRVL               3            0.136133     11
+Early Cycle   MRVL               6            0.165145     11
+Early Cycle   MRVL              12            0.408205     11
+Early Cycle     MU               3            0.101783     11
+Early Cycle     MU               6            0.179151     11
+Early Cycle     MU              12            0.525741     11
+Early Cycle   NVDA               3            0.308011     11
+Early Cycle   NVDA               6            0.584448     11
+Early Cycle   NVDA              12            1.280069     11
+ Late Cycle   MRVL               3            0.241944      2
+ Late Cycle   MRVL               6            0.129257      2
+ Late Cycle   MRVL              12           -0.285709      1
+ Late Cycle     MU               3            0.536747      2
+ Late Cycle     MU               6            0.521242      2
+ Late Cycle     MU              12           -0.291064      1
+ Late Cycle   NVDA               3            0.216774      2
+ Late Cycle   NVDA               6            0.111194      2
+ Late Cycle   NVDA              12           -0.413558      1
+  Mid Cycle   MRVL               3            0.096171      3
+  Mid Cycle   MRVL               6            0.312325      2
+  Mid Cycle   MRVL              12           -0.251025      1
+  Mid Cycle     MU               3            0.126488      3
+  Mid Cycle     MU               6            0.742678      2
+  Mid Cycle     MU              12           -0.346999      1
+  Mid Cycle   NVDA               3            0.050684      3
+  Mid Cycle   NVDA               6            0.333364      2
+  Mid Cycle   NVDA              12           -0.241629      1
 ```
 
-Excerpt from the AI brief (`semiconductor_cycle_brief.txt`):
+Current indicator readings (Q4 2025):
 
-> **Late Cycle** conditions persist as of Q1 2026, with cycle index at **0.403** – down sharply from 0.859 in Q4 2025. The **-0.456 QoQ decline** signals meaningful late-cycle deterioration.
->
-> - **Equipment Revenue Growth: -0.838σ** — below-trend capex spending
-> - **Inventory-to-Revenue: +1.37σ** — elevated inventory suggests destocking ahead
-> - **SOXX Relative Momentum: +1.09σ** — equities still outperforming despite weakening fundamentals
+| Metric | Value |
+|--------|-------|
+| Phase | Mid Cycle |
+| Cycle index | 0.74 |
+| Direction (QoQ) | +0.94 |
+| Equipment revenue growth | +2.12σ |
+| Inventory / revenue | −1.19σ (lean) |
+| SOXX vs QQQ momentum | +0.85σ |
 
-The dashboard overlays phase-colored bands on the composite index time series, bar charts of current z-scores, and a heatmap of historical forward returns by phase.
+The dashboard overlays phase-colored bands on the composite index, individual indicator z-scores, log-scale indexed prices for NVDA/MU/MRVL, and a forward-return heatmap across all four phases.
 
 ---
 
