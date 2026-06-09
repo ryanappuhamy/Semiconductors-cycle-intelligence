@@ -1,0 +1,42 @@
+# Semiconductor Cycle Brief – Q1 2026
+
+## Current Phase Assessment
+
+**Late Cycle** conditions persist as of Q1 2026, with cycle index at **0.403** – down sharply from 0.859 in Q4 2025. The **-0.456 QoQ decline** (53% drop in index level) signals meaningful late-cycle deterioration. This phase historically precedes downturn conditions, indicating the sector is in the latter stages of expansion with elevated rollover risk.
+
+## Key Indicator Readings
+
+- **Equipment Revenue Growth: -0.838σ** – Below-trend capex spending indicates demand normalization; OEMs pulling back on capacity expansion
+- **Inventory-to-Revenue: +1.37σ** – Significantly elevated inventory levels suggest channel destocking underway and demand/supply mismatch
+- **SOxx Relative Momentum: +1.09σ** – Semiconductor equities still outperforming broader market, creating valuation risk as fundamentals weaken
+
+**Divergence Alert**: Positive equity momentum (+1.09σ) against negative equipment growth (-0.838σ) and bloated inventories (+1.37σ) indicates market has not fully priced cycle deterioration.
+
+## Historical Context
+
+The sequential index collapse (-53% QoQ) represents one of the steeper late-cycle decelerations on record. Inventory z-score above +1.3σ historically foreshadows margin compression and earnings revisions within 2-3 quarters. Equipment growth below -0.8σ has previously marked inflection points toward early downturn phase.
+
+## Key Risks
+
+1. **Inventory correction intensification** – Current +1.37σ reading suggests 2-3 quarters of destocking ahead
+2. **Transition to Downturn phase** – Rapid index deterioration increases probability of phase shift by Q2-Q3 2026
+3. **Valuation compression** – SOxx relative strength (+1.09σ) vulnerable to multiple contraction as earnings estimates reset
+4. **Capex cliff** – Negative equipment growth momentum could accelerate if end-demand softens further
+
+## 6-12 Month Outlook
+
+**Base case (60% probability)**: Transition to **Early Downturn** phase by Q3 2026. Expect 6-9 month inventory digestion period, 15-25% earnings estimate cuts for commodity semis, and sector underperformance of 10-15% relative to broader indices.
+
+**Bull case (25%)**: Stabilization at late-cycle with AI/data center demand providing offset; inventory correction contained to 1-2 quarters.
+
+**Bear case (15%)**: Accelerated downturn if macro weakens; deep inventory correction extends through H1 2027.
+
+## Positioning Implications (NVDA, MU, MRVL)
+
+**NVDA (Avoid/Underweight)**: Historical 3-month forward return of **-6.48%** in late cycle reflects vulnerability at peak valuations. GPU inventory risk underappreciated; recommend reducing exposure ahead of likely downturn transition.
+
+**MU (Neutral/Tactical)**: **+18.42%** historical forward return suggests memory cycle may be offset from broader semi cycle. However, +1.37σ inventory reading argues for caution; await confirmation inventory has troughed before adding.
+
+**MRVL (Relative Outperform)**: **+16.64%** historical return strongest risk-adjusted profile. Data infrastructure exposure provides late-cycle resilience. Preferred vehicle for maintaining semi exposure, but size positions for 15-20% volatility.
+
+**Tactical recommendation**: Reduce sector weight from benchmark to 75-85% of neutral. Favor MRVL > MU > NVDA until cycle index stabilizes or inventory z-score falls below +0.75σ.
