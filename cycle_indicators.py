@@ -101,7 +101,13 @@ def build_indicators(
     inv_ratio = inventory_to_revenue_ratio(revenue, inventory)
     daily_momentum = soxx_relative_momentum(prices)
 
-    quarter_index = eq_growth.index.union(inv_ratio.index).sort_values().unique()
+    quarter_index = (
+        revenue.index.union(inventory.index)
+        .union(eq_growth.index)
+        .union(inv_ratio.index)
+        .sort_values()
+        .unique()
+    )
     quarter_index = pd.DatetimeIndex(quarter_index)
 
     momentum_q = _align_to_quarter_end(daily_momentum, quarter_index)

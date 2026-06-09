@@ -49,7 +49,12 @@ def main() -> int:
         print("  No forward return summary available.")
 
     print("\n[5/5] Generating dashboard and AI brief...")
-    dashboard_path = create_dashboard(classified, forward_summary)
+    dashboard_path = create_dashboard(
+        classified,
+        forward_summary,
+        prices=prices,
+        data_as_of=data.get("data_as_of"),
+    )
     brief = generate_brief(classified, forward_summary)
 
     print("\n" + "=" * 60)

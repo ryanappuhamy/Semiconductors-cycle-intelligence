@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import warnings
 
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
 EQUIPMENT_TICKERS = ["ASML", "AMAT", "LRCX", "MU", "TXN", "TSM"]
 PRICE_TICKERS = ["NVDA", "MU", "MRVL", "VRT", "SOXX", "QQQ"]
-PRICE_YEARS = 10
+HISTORY_START = "2015-01-01"
 
 REVENUE_ROWS = ("Total Revenue", "Revenue", "Operating Revenue")
 INVENTORY_ROWS = ("Inventory", "Inventories")
@@ -35,55 +36,189 @@ def _to_quarter_end_index(series: pd.Series) -> pd.Series:
     return out.sort_index()
 
 
-def _quarterly_series(ticker: str, statement: str, row_candidates: tuple[str, ...]) -> pd.Series:
-    """Extract a quarterly financial line item as a date-indexed series."""
-    t = yf.Ticker(ticker)
-    if statement == "income":
-        df = t.quarterly_income_stmt
-        if df is None or df.empty:
-            df = t.quarterly_financials
+def _statement_df(ticker: yf.Ticker, statement: str, freq: str) -> pd.DataFrame | None:
+    if freq == "quarterly":
+        if statement == "income":
+            for attr in ("quarterly_income_stmt", "quarterly_financials"):
+                df = getattr(ticker, attr, None)
+                if df is not None and not df.empty:
+                    return df
+        else:
+            for attr in ("quarterly_balance_sheet", "quarterly_balancesheet"):
+                df = getattr(ticker, attr, None)
+                if df is not None and not df.empty:
+                    return df
     else:
-        df = t.quarterly_balance_sheet
-        if df is None or df.empty:
-            df = t.quarterly_balancesheet
+        if statement == "income":
+            for attr in ("income_stmt", "financials"):
+                df = getattr(ticker, attr, None)
+                if df is not None and not df.empty:
+                    return df
+        else:
+            for attr in ("balance_sheet", "balancesheet"):
+                df = getattr(ticker, attr, None)
+                if df is not None and not df.empty:
+                    return df
+    return None
 
+
+def _line_item_series(
+    ticker: str,
+    statement: str,
+    row_candidates: tuple[str, ...],
+    freq: str,
+) -> pd.Series:
+    t = yf.Ticker(ticker)
+    df = _statement_df(t, statement, freq)
     if df is None or df.empty:
-        warnings.warn(f"No quarterly {statement} data for {ticker}")
         return pd.Series(dtype=float, name=ticker)
 
     row = _pick_row(df, row_candidates)
     if row is None:
-        warnings.warn(f"Row not found in {statement} for {ticker}")
+        warnings.warn(f"Row not found in {freq} {statement} for {ticker}")
         return pd.Series(dtype=float, name=ticker)
 
     series = row.copy()
     series.index = pd.to_datetime(series.index)
-    series = _to_quarter_end_index(series.astype(float))
+    series = series.astype(float).sort_index()
+    if freq == "quarterly":
+        series = _to_quarter_end_index(series)
     series.name = ticker
     return series
 
 
+def _quarterly_grid(start: str = HISTORY_START) -> pd.DatetimeIndex:
+    end = pd.Timestamp.today().to_period("Q").end_time.normalize()
+    begin = pd.Timestamp(start).to_period("Q").end_time.normalize()
+    return pd.date_range(start=begin, end=end, freq="QE-DEC")
+
+
+def _annual_flow_to_quarterly(annual: pd.Series) -> pd.Series:
+    """Spread annual flow items (revenue) evenly across the four fiscal quarters."""
+    if annual.empty:
+        return annual
+
+    records: dict[pd.Timestamp, float] = {}
+    for date, value in annual.sort_index().items():
+        if pd.isna(value):
+            continue
+        fy_end = pd.Timestamp(date)
+        per_quarter = value / 4
+        for i in range(4):
+            q_end = (fy_end.to_period("Q") - i).end_time.normalize()
+            records[q_end] = per_quarter
+
+    if not records:
+        return pd.Series(dtype=float, name=annual.name)
+
+    out = pd.Series(records, name=annual.name).sort_index()
+    return out.groupby(level=0).last()
+
+
+def _annual_stock_to_quarterly(annual: pd.Series) -> pd.Series:
+    """Interpolate annual stock items (inventory) onto a quarterly grid."""
+    if annual.empty:
+        return annual
+
+    annual = annual.sort_index()
+    quarter_ends = _quarterly_grid()
+    anchor_index = annual.index.union(quarter_ends).sort_values()
+    interpolated = annual.reindex(anchor_index).interpolate(method="time")
+    result = interpolated.reindex(quarter_ends)
+    result.name = annual.name
+    return result.dropna(how="all")
+
+
+def _back_extrapolate_quarterly(series: pd.Series, target_start: str = HISTORY_START) -> pd.Series:
+    """Extend a quarterly series backward to target_start using early-sample growth."""
+    series = series.dropna().sort_index()
+    target = pd.Timestamp(target_start).to_period("Q").end_time.normalize()
+    if series.empty or series.index.min() <= target:
+        return series
+
+    grid = _quarterly_grid(target_start)
+    grid = grid[grid <= series.index.max()]
+    filled = series.reindex(grid)
+
+    valid = filled.dropna()
+    if len(valid) < 2:
+        return series
+
+    lookback = valid.iloc[: min(8, len(valid))]
+    if len(lookback) >= 5:
+        growth = (lookback.iloc[4] / lookback.iloc[0]) ** 0.25 - 1
+    else:
+        growth = (lookback.iloc[-1] / lookback.iloc[0]) ** (1 / (len(lookback) - 1)) - 1
+    growth = float(np.clip(growth, -0.12, 0.12))
+
+    anchor_date = valid.index[0]
+    anchor_value = valid.iloc[0]
+
+    for q_end in grid:
+        if q_end >= anchor_date or pd.notna(filled.loc[q_end]):
+            continue
+        quarters_back = (anchor_date.to_period("Q") - q_end.to_period("Q")).n
+        filled.loc[q_end] = anchor_value / ((1 + growth) ** quarters_back)
+
+    filled.name = series.name
+    return filled.sort_index()
+
+
+def _merge_quarterly_annual(
+    quarterly: pd.Series,
+    annual: pd.Series,
+    statement: str,
+) -> pd.Series:
+    """Prefer reported quarterly values; fill gaps with annual-derived quarterly estimates."""
+    if statement == "income":
+        from_annual = _annual_flow_to_quarterly(annual)
+    else:
+        from_annual = _annual_stock_to_quarterly(annual)
+
+    if quarterly.empty:
+        merged = from_annual
+    elif from_annual.empty:
+        merged = quarterly
+    else:
+        merged = from_annual.copy()
+        merged.update(quarterly.dropna())
+
+    merged = _back_extrapolate_quarterly(merged)
+    merged = merged[merged.index >= pd.Timestamp(HISTORY_START)].sort_index()
+    merged.name = quarterly.name or annual.name
+    return merged
+
+
+def _fetch_merged_line_item(
+    ticker: str,
+    statement: str,
+    row_candidates: tuple[str, ...],
+) -> pd.Series:
+    quarterly = _line_item_series(ticker, statement, row_candidates, freq="quarterly")
+    annual = _line_item_series(ticker, statement, row_candidates, freq="annual")
+    return _merge_quarterly_annual(quarterly, annual, statement)
+
+
 def fetch_quarterly_revenue(tickers: list[str] | None = None) -> pd.DataFrame:
     tickers = tickers or EQUIPMENT_TICKERS
-    frames = [_quarterly_series(t, "income", REVENUE_ROWS) for t in tickers]
+    frames = [_fetch_merged_line_item(t, "income", REVENUE_ROWS) for t in tickers]
     df = pd.concat(frames, axis=1).sort_index()
     return df.dropna(how="all")
 
 
 def fetch_quarterly_inventory(tickers: list[str] | None = None) -> pd.DataFrame:
     tickers = tickers or ["MU", "TXN"]
-    frames = [_quarterly_series(t, "balance", INVENTORY_ROWS) for t in tickers]
+    frames = [_fetch_merged_line_item(t, "balance", INVENTORY_ROWS) for t in tickers]
     df = pd.concat(frames, axis=1).sort_index()
     return df.dropna(how="all")
 
 
 def fetch_daily_prices(
     tickers: list[str] | None = None,
-    years: int = PRICE_YEARS,
+    start: str = HISTORY_START,
 ) -> pd.DataFrame:
     tickers = tickers or PRICE_TICKERS
     end = pd.Timestamp.today().normalize()
-    start = end - pd.DateOffset(years=years)
 
     data = yf.download(
         tickers,
@@ -103,10 +238,25 @@ def fetch_daily_prices(
     return prices.dropna(how="all").sort_index()
 
 
-def collect_all() -> dict[str, pd.DataFrame]:
+def latest_reported_quarter() -> pd.Timestamp | None:
+    """Most recent calendar quarter with reported (non-estimated) quarterly filings."""
+    quarter_dates: list[pd.Timestamp] = []
+    for ticker in EQUIPMENT_TICKERS:
+        reported = _line_item_series(ticker, "income", REVENUE_ROWS, freq="quarterly")
+        quarter_dates.extend(reported.dropna().index.tolist())
+    for ticker in ("MU", "TXN"):
+        reported = _line_item_series(ticker, "balance", INVENTORY_ROWS, freq="quarterly")
+        quarter_dates.extend(reported.dropna().index.tolist())
+    if not quarter_dates:
+        return None
+    return pd.Timestamp(max(quarter_dates))
+
+
+def collect_all() -> dict[str, pd.DataFrame | pd.Timestamp | None]:
     """Fetch all datasets needed by the cycle intelligence pipeline."""
     return {
         "revenue": fetch_quarterly_revenue(),
         "inventory": fetch_quarterly_inventory(),
         "prices": fetch_daily_prices(),
+        "data_as_of": latest_reported_quarter(),
     }
