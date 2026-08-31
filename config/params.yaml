@@ -1,0 +1,56 @@
+# Modelling and validation parameters.
+
+paths:
+  duckdb: "data/processed/semicycle.duckdb"
+  panel:  "data/processed/panel.parquet"
+  reports_dir: "reports"
+
+target:
+  # What the nowcast predicts: YoY growth of the 3-month moving average of
+  # worldwide WSTS billings. 3MMA is the industry-standard smoothing; YoY makes
+  # the cycle stationary and comparable to how the sell-side talks about it.
+  series: wsts_worldwide
+  smoothing_months: 3
+  transform: yoy
+  horizons: [0, 3, 6]       # h=0 nowcast, h=3 and h=6 months ahead
+
+features:
+  # Transform families applied to each input series before it enters the panel.
+  yoy: true
+  mom_3mma: true
+  zscore_expanding_min_periods: 24
+  momentum_windows_months: [3, 6, 12]
+
+cv:
+  # Expanding-window walk-forward with purge + embargo (Lopez de Prado).
+  scheme: expanding
+  min_train_months: 96      # 8y before the first out-of-sample prediction
+  step_months: 1
+  purge_months: 3           # drop training points whose target window overlaps the test month
+  embargo_months: 1         # extra gap after the test month before training resumes
+  # Headline scoreboard starts here — once the timely indicators (Taiwan monthly
+  # revenue from 2005, semiconductor ETFs, FRED semi IP) have a few years of
+  # history. The AR benchmark is scored on the identical window. The full-history
+  # walk-forward is still written to reports/nowcast_oos_h*.csv.
+  oos_start: "2006-01-01"
+
+models:
+  ar_benchmark:
+    max_lags: 12
+    ic: aic
+  elasticnet:
+    l1_ratios: [0.2, 0.5, 0.8, 1.0]
+    n_alphas: 40
+  lightgbm:
+    n_estimators: 300
+    learning_rate: 0.03
+    num_leaves: 15
+    min_child_samples: 20
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+
+strategy:      # consumed in Module 3
+  rebalance: month_end
+  cost_bps: 10
+  vol_target_annual: 0.20
