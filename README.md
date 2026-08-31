@@ -41,7 +41,7 @@ config/            sources.yaml (URLs, tickers, release lags) + params.yaml (mod
 src/semicycle/
   io/              one loader per source -> tidy (date, series, value, published)
   features/        point-in-time alignment (as_of_panel) + stationary transforms -> panel
-  cycle/           [Module 2] mixed-frequency dynamic factor model + Bry-Boschan dating
+  cycle/           dynamic factor model (latent cycle index) + Bry-Boschan phase dating
   nowcast/         supervised dataset, model zoo, purged/embargoed walk-forward CV
   strategy/        [Module 3] cycle-driven equity strategy + honest backtest stats
   report/          figures + brief
@@ -76,6 +76,48 @@ are restricted.
 
 ---
 
+## The cycle factor
+
+The previous project combined three indicators with fixed hand-picked weights
+(0.40 / 0.30 / 0.30). Here the common component is **estimated** — a single
+latent factor with AR(2) dynamics drives a set of coincident indicators, each
+with its own loading and idiosyncratic noise:
+
+```
+x_it = λ_i · f_t + e_it          f_t = a₁ f_{t-1} + a₂ f_{t-2} + u_t
+```
+
+Fitted by EM (`statsmodels DynamicFactorMQ`), which also handles the **ragged
+edge** — the indicators end in different months because they publish with
+different lags. Inputs (`config/params.yaml` → `cycle:`): the four WSTS regional
+billings (YoY), the Taiwan value-chain revenue (YoY), and 12-month SOX momentum —
+all coincident views of *global* semiconductor demand. US IP and new-orders were
+tried and dropped: US fab output is a capacity-constrained slice that stayed flat
+through the 2021 boom and pulled the factor off the cycle.
+
+The fitted factor (1987–) correlates **0.95** with WSTS 3MMA-YoY and lines up
+with the record — 2000 peak, 2001 bust, GFC, 2019 memory glut, 2021 shortage
+boom, 2023 trough. **`cycle.dating`** then applies the classical **Bry–Boschan**
+turning-point algorithm (alternating local extrema, minimum 5-month phases and
+18-month cycles, edge censoring) and maps peaks/troughs + the factor's zero line
+onto the four industry phases:
+
+```
+trough → peak  (expansion) :  Early Cycle below 0,  Mid Cycle above 0
+peak → trough  (contraction):  Late Cycle  above 0,  Downturn  below 0
+```
+
+`make cycle` writes `reports/cycle_factor.png` and `reports/cycle_chronology.csv`
+(35 phase spans, ~14-month average — a ~4-year full cycle). Current reading:
+**Mid Cycle**, factor **+1.7**.
+
+For the nowcast the factor re-enters as a **pseudo-real-time** feature: built from
+point-in-time inputs (`as_of_panel`) and taken as the Kalman-*filtered* state, so
+the factor value at month `T` uses only data available by `T` (model parameters
+are still full-sample — the standard pseudo-real-time approximation).
+
+---
+
 ## Validation
 
 **Expanding-window walk-forward with purge and embargo.** For each out-of-sample
@@ -98,31 +140,31 @@ vs contracting), turning-point accuracy, correlation.
 
 ---
 
-## Results (Module 1)
+## Results
 
 240 out-of-sample months (2006–2025), expanding walk-forward with purge + embargo.
 Full scoreboards in `reports/scoreboard_h*.csv`, figures in
 `reports/nowcast_oos_h*.png`, discussion in [NOTES_IT.md](NOTES_IT.md).
 
-**On full-sample error, the point-in-time autoregression wins at every horizon** —
-as it should, for a 3-month-average YoY series that is ~0.95 autocorrelated. The
-feature models get close but do not beat it on mean error. A model that *crushed*
+**Module 1 (indicators only).** On full-sample error the point-in-time
+autoregression won at every horizon — as it should, for a 3-month-average YoY
+series that is ~0.95 autocorrelated. The feature models only edged it at the
+inflections (LightGBM −3.5% turning-point MAE at h = 3). A model that *crushed*
 this benchmark would be a leak, not a discovery.
 
-**The feature models' edge is at the inflections** — the third of months where the
-cycle is actually moving (`|Δ|` above its 67th percentile):
+**Module 2 (add the latent cycle factor).** Feeding the DFM factor and its
+6-month change into the feature set moves the feature models past the benchmark:
 
-| Horizon | Metric | AR benchmark | LightGBM |
-|---|---|---|---|
-| h = 3 | MAE (turning-point months) | 0.107 | **0.103** (−3.5%) |
-| h = 3 | direction-of-change accuracy | 0.42 | **0.47** |
-| h = 6 | MAE (turning-point months) | 0.140 | **0.132** (−5.6%) |
+| Horizon | Model | MAE | Skill vs AR | MAE at turning points | vs AR |
+|---|---|---|---|---|---|
+| h = 0 | ElasticNet | 0.0314 | **+1.9%** | 0.045 | −5% |
+| h = 3 | LightGBM | 0.0722 | **+3.5%** (was −9.3%) | 0.091 | **−15%** |
+| h = 6 | LightGBM | 0.0944 | **+6.7%** (was −0.6%) | 0.125 | **−11%** |
 
-On quiet months AR wins by simply persisting the last value, which keeps its
-aggregate MAE low — but a cycle-timing strategy only trades around the turns.
-Feature importance is dominated by the WSTS regional structure (Asia-Pacific YoY)
-and Nasdaq / inventory-to-sales; the Taiwan revenue feed adds *timeliness*, not
-orthogonal information (WSTS "Asia Pacific" already carries it).
+`cycle_factor__chg6` is the single most important LightGBM feature at h = 6
+(25% of gain) and third at h = 3. The estimated latent factor carries cycle
+information that the raw indicators, taken individually, do not — which is the
+whole point of estimating it.
 
 ---
 
@@ -145,20 +187,15 @@ WSTS + Taiwan + market data.
 
 ## Roadmap
 
-- **Module 2 — the cycle factor.** `cycle/dfm.py`: a Stock–Watson mixed-frequency
-  dynamic factor model (`statsmodels DynamicFactorMQ`) over billings, Taiwan
-  revenue, FRED activity and equity momentum, giving one latent coincident
-  cycle index. `cycle/dating.py`: Bry–Boschan turning-point dating → the
-  Early/Mid/Late/Downturn chronology. The factor then feeds back as a nowcast
-  feature.
+- **Module 2 — the cycle factor. Done** (see [The cycle factor](#the-cycle-factor)).
 - **Module 3 — the strategy.** `strategy/`: cycle level + momentum → a timing
   signal on `^SOX`/`SMH` and a cross-sectional tilt across the universe. Monthly
   rebalance, explicit costs, and statistics that quantify overfitting risk:
   Sharpe, **deflated Sharpe ratio**, **probability of backtest overfitting**
   (CSCV), turnover, per-regime performance. Migrates the old project's dashboard
   and written brief.
-- **Module 4.** Real-time data vintages (ALFRED), a static HTML dashboard,
-  final write-up.
+- **Module 4.** Fully recursive real-time factor, data vintages (ALFRED), a
+  static HTML dashboard, final write-up.
 
 ---
 
@@ -167,13 +204,13 @@ WSTS + Taiwan + market data.
 | Previous | Here |
 |---|---|
 | 3-pillar intuition (equipment capex, inventory, relative momentum) | **Kept** as feature families |
-| 4-phase taxonomy + level×direction rules | **Kept**; becomes the output of Bry–Boschan dating on the factor |
+| 4-phase taxonomy + level×direction rules | **Kept** — now the output of Bry–Boschan dating on the factor (`cycle/dating.py`) |
 | yfinance daily prices | **Migrated** to `io/prices.py` (+ month-end resampling) |
 | expanding-window `zscore` | **Migrated** to `features/transforms.py` with anti-leakage tests |
 | dashboard, AI brief | **Migrated** in Module 3 |
 | yfinance *fundamentals* + synthetic annual→quarterly backfill / back-extrapolation | **Removed** — replaced by WSTS (40y) + Taiwan revenue (20y) + FRED |
-| hand-weighted z-score composite | **Replaced** by an estimated dynamic factor |
-| in-sample forward-return averages (n = 1–3 per phase) | **Replaced** by purged walk-forward nowcast + a cost-aware backtest |
+| hand-weighted z-score composite | **Replaced** by an estimated dynamic factor (`cycle/dfm.py`) |
+| in-sample forward-return averages (n = 1–3 per phase) | **Replaced** by purged walk-forward nowcast (+ a cost-aware backtest in Module 3) |
 | single scripts | **Replaced** by a package, config, tests, CI |
 
 ---
