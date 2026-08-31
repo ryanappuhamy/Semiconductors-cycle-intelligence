@@ -74,6 +74,55 @@ def build_cycle_inputs(cfg: Config) -> pd.DataFrame:
     return out.replace([np.inf, -np.inf], np.nan)
 
 
+def _fit_dfm(x: pd.DataFrame, cfg: Config):
+    from statsmodels.tsa.statespace.dynamic_factor_mq import DynamicFactorMQ
+
+    model = DynamicFactorMQ(
+        x.dropna(how="all"),
+        factors=1,
+        factor_orders=cfg.params.cycle.factor_orders,
+        idiosyncratic_ar1=True,
+        standardize=True,
+    )
+    return model.fit(maxiter=cfg.params.cycle.em_maxiter, disp=0)
+
+
+def cycle_factor_pit(cfg: Config) -> pd.Series:
+    """Pseudo-real-time cycle factor for use as a nowcast feature.
+
+    The DFM inputs are built from `as_of_panel` (each series carried at its last
+    *published* value), and we take the Kalman-**filtered** factor — the estimate
+    of ``f_t`` using data through ``t`` only. Model parameters are still estimated
+    on the full sample (standard "pseudo real-time" approximation); the factor
+    path itself carries no future information.
+    """
+    from ..features.build import _load_tidy, _monthly_index
+    from ..features.transforms import as_of_panel
+
+    store = Store(cfg.duckdb_path)
+    tidy = _load_tidy(store)
+    pit = as_of_panel(tidy, _monthly_index(tidy))
+
+    x = pd.DataFrame(
+        {
+            s: _apply_transform(pit[s].astype(float), spec)
+            for s, spec in cfg.params.cycle.inputs.items()
+            if s in pit
+        }
+    ).replace([np.inf, -np.inf], np.nan)
+    if cfg.params.cycle.start:
+        x = x.loc[x.index >= pd.Timestamp(cfg.params.cycle.start)]
+
+    res = _fit_dfm(x, cfg)
+    factor = res.factors.filtered.iloc[:, 0]
+
+    ref = cfg.params.cycle.sign_reference
+    if ref in x and x[ref].corr(factor) < 0:
+        factor = -factor
+    factor = (factor - factor.mean()) / factor.std()
+    return factor.rename("cycle_factor")
+
+
 @dataclass
 class CycleFactor:
     factor: pd.Series           # the semiconductor cycle index (standardised)
@@ -89,21 +138,13 @@ class CycleFactor:
 
 
 def fit_cycle_factor(cfg: Config, inputs: pd.DataFrame | None = None) -> CycleFactor:
-    from statsmodels.tsa.statespace.dynamic_factor_mq import DynamicFactorMQ
-
+    """Full-sample cycle factor for the historical chronology: Kalman-**smoothed**
+    factor from the DFM on reference-month-dated final data. (For the real-time
+    nowcast feature use :func:`cycle_factor_pit` instead.)"""
     ccfg = cfg.params.cycle
-    x = build_cycle_inputs(cfg) if inputs is None else inputs
-    x = x.dropna(how="all")
+    x = (build_cycle_inputs(cfg) if inputs is None else inputs).dropna(how="all")
 
-    model = DynamicFactorMQ(
-        x,
-        factors=1,
-        factor_orders=ccfg.factor_orders,
-        idiosyncratic_ar1=True,
-        standardize=True,
-    )
-    res = model.fit(maxiter=ccfg.em_maxiter, disp=0)
-
+    res = _fit_dfm(x, cfg)
     factor = res.factors.smoothed.iloc[:, 0].rename("cycle_factor")
 
     loadings = pd.Series(

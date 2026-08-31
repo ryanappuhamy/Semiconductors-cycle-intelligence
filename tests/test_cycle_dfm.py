@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from semicycle.config import load_config
-from semicycle.cycle.dfm import _apply_transform, fit_cycle_factor
+from semicycle.cycle.dfm import _apply_transform, cycle_factor_pit, fit_cycle_factor
 
 
 def test_apply_transform():
@@ -46,3 +46,18 @@ def test_dfm_recovers_common_factor():
     assert corr > 0.9  # sign already fixed to be positive vs ind_0
     assert cf.correlations["ind_0"] > 0
     assert len(cf.factor) == n
+
+
+def test_cycle_factor_pit_is_realtime_and_tracks_billings():
+    """When the DuckDB store is present (post `make ingest`), the pseudo-real-time
+    factor should exist over the modern sample and track the billings cycle."""
+    cfg = load_config()
+    if not cfg.duckdb_path.exists():
+        pytest.skip("no ingested data — run `make ingest`")
+    f = cycle_factor_pit(cfg)
+    assert f.name == "cycle_factor"
+    assert f.notna().sum() > 200
+    panel = load_config().panel_path
+    if panel.exists():
+        tgt = pd.read_parquet(panel)["target"]
+        assert abs(f.reindex(tgt.index).corr(tgt)) > 0.5

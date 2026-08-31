@@ -107,6 +107,21 @@ def build_features(tidy: pd.DataFrame, index: pd.DatetimeIndex, cfg: Config) -> 
     return panel
 
 
+def _add_cycle_factor(panel: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    """Add the pseudo-real-time DFM cycle factor and its momentum as features."""
+    try:
+        from ..cycle.dfm import cycle_factor_pit
+
+        f = cycle_factor_pit(cfg).reindex(panel.index)
+    except Exception as exc:  # noqa: BLE001 - a factor failure shouldn't sink the panel
+        print(f"  [features] cycle factor unavailable: {exc}")
+        return panel
+    panel["cycle_factor"] = f
+    panel["cycle_factor__chg3"] = f.diff(3)
+    panel["cycle_factor__chg6"] = f.diff(6)
+    return panel
+
+
 def build_panel(cfg: Config) -> pd.DataFrame:
     store = Store(cfg.duckdb_path)
     tidy = _load_tidy(store)
@@ -114,5 +129,6 @@ def build_panel(cfg: Config) -> pd.DataFrame:
     features = build_features(tidy, index, cfg)
     target = build_target(tidy, cfg).reindex(index)
     panel = features.join(target)
+    panel = _add_cycle_factor(panel, cfg)
     panel.index.name = "date"
     return panel
