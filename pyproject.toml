@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "semicycle"
-version = "0.2.0"
+version = "0.3.0"
 description = "Semiconductor Cycle Intelligence — mixed-frequency cycle factor, nowcasting, and a cost-aware equity strategy, all on free public data"
 readme = "README.md"
 requires-python = ">=3.10"

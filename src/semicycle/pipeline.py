@@ -121,6 +121,7 @@ def run_nowcast(cfg: Config | None = None) -> dict:
             oos_start=cv.oos_start,
         )
         board = scoreboard(results)
+        board.round(4).to_csv(cfg.reports_dir / f"scoreboard_h{h}.csv")
         fig = nowcast_oos(results, h, cfg.reports_dir / f"nowcast_oos_h{h}.png")
         results.to_csv(cfg.reports_dir / f"nowcast_oos_h{h}.csv")
         imp = feature_importance(data, cfg.params.models.lightgbm)

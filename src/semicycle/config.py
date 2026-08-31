@@ -81,6 +81,24 @@ class FeaturesCfg(BaseModel):
     momentum_windows_months: list[int]
 
 
+class DatingCfg(BaseModel):
+    window: int = 5
+    min_phase: int = 5
+    min_cycle: int = 18
+    edge: int = 6
+    level_smooth: int = 3
+    min_run: int = 3
+
+
+class CycleCfg(BaseModel):
+    inputs: dict[str, str]
+    factor_orders: int = 2
+    em_maxiter: int = 200
+    sign_reference: str
+    start: str | None = None
+    dating: DatingCfg = Field(default_factory=DatingCfg)
+
+
 class CvCfg(BaseModel):
     scheme: str
     min_train_months: int
@@ -106,6 +124,7 @@ class Params(BaseModel):
     paths: dict[str, str]
     target: TargetCfg
     features: FeaturesCfg
+    cycle: CycleCfg
     cv: CvCfg
     models: ModelsCfg
     strategy: StrategyCfg
