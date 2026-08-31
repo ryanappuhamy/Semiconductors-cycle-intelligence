@@ -21,6 +21,28 @@ features:
   zscore_expanding_min_periods: 24
   momentum_windows_months: [3, 6, 12]
 
+cycle:
+  # Inputs to the dynamic factor model — coincident indicators of one underlying
+  # semiconductor demand cycle, each mapped to a stationary transform.
+  # (all monthly here, so DynamicFactorMQ runs monthly-only; its EM handles the
+  # ragged edges from different series end-dates.)
+  inputs:
+    # coincident views of *global semiconductor demand*: the four WSTS regional
+    # billings (their common component is the worldwide cycle; regional quirks
+    # stay in the idiosyncratic part), plus the Taiwan value chain and the
+    # equity market's read. US IP / new-orders were tried and dropped — US fab
+    # output is a small, capacity-constrained slice that missed the 2021 boom.
+    wsts_americas: yoy
+    wsts_asia_pacific: yoy
+    wsts_europe: yoy
+    wsts_japan: yoy
+    twrev_aggregate: yoy
+    px_SOX: mom12
+  factor_orders: 2          # AR(2) on the latent factor
+  em_maxiter: 500
+  sign_reference: wsts_asia_pacific   # flip the factor so this input loads positive
+  start: "1986-01-01"
+
 cv:
   # Expanding-window walk-forward with purge + embargo (Lopez de Prado).
   scheme: expanding

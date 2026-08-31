@@ -81,6 +81,14 @@ class FeaturesCfg(BaseModel):
     momentum_windows_months: list[int]
 
 
+class CycleCfg(BaseModel):
+    inputs: dict[str, str]
+    factor_orders: int = 2
+    em_maxiter: int = 200
+    sign_reference: str
+    start: str | None = None
+
+
 class CvCfg(BaseModel):
     scheme: str
     min_train_months: int
@@ -106,6 +114,7 @@ class Params(BaseModel):
     paths: dict[str, str]
     target: TargetCfg
     features: FeaturesCfg
+    cycle: CycleCfg
     cv: CvCfg
     models: ModelsCfg
     strategy: StrategyCfg
