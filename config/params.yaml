@@ -42,6 +42,13 @@ cycle:
   em_maxiter: 500
   sign_reference: wsts_asia_pacific   # flip the factor so this input loads positive
   start: "1986-01-01"
+  dating:                   # Bry-Boschan turning-point rules
+    window: 5              # local extremum over +/- 5 months
+    min_phase: 5           # peak-to-trough (or trough-to-peak) >= 5 months
+    min_cycle: 18          # peak-to-peak (or trough-to-trough) >= 18 months
+    edge: 6               # no turn within 6 months of either end of the sample
+    level_smooth: 3       # months of smoothing on the zero-line sub-split
+    min_run: 3           # merge phase spans shorter than this into the previous one
 
 cv:
   # Expanding-window walk-forward with purge + embargo (Lopez de Prado).
