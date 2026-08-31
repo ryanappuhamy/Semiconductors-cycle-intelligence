@@ -1,0 +1,80 @@
+# Data sources. Everything here is free and needs no paid terminal.
+# `release_lag_days` = how long AFTER the reference month the figure is actually
+# published. Feature construction shifts each series by this lag so that a value
+# dated month t only enters the model once it was genuinely knowable.
+
+wsts:
+  # WSTS Blue Book "Historical Billings Report" — worldwide semiconductor sales,
+  # monthly, by region, back to 1986. Direct .xlsx, no login.
+  url: "https://www.wsts.org/esraCMS/extension/media/f/WST/7735/WSTS-Historical-Billings-Report-Jun_2026.xlsx"
+  release_lag_days: 35          # WSTS publishes ~5 weeks after month-end
+  regions: [Worldwide, Americas, Europe, Japan, "Asia Pacific"]
+  # The Jun-2026 Blue Book's 2026 rows imply an H1-2026 worldwide run-rate ~2x
+  # the known market size (monthly MoM jumps of +20-26%, unprecedented in 40y of
+  # history) — almost certainly a data-entry / methodology artefact in that
+  # release. We cap WSTS actuals at the last clean month; the loader also prints
+  # a plausibility warning for anything past it. Revisit when a newer book lands.
+  actuals_through: "2025-12-31"
+  mom_zscore_alarm: 4.0
+
+taiwan_revenue:
+  # Taiwan-listed firms must report monthly revenue within 10 days of month-end —
+  # the most timely hard fundamental in the industry. Source: FinMind API v4.
+  api_url: "https://api.finmindtrade.com/api/v4/data"
+  dataset: "TaiwanStockMonthRevenue"
+  start_date: "2005-01-01"
+  release_lag_days: 11
+  # id -> label. Foundry + OSAT + fabless + memory, i.e. most of the value chain.
+  companies:
+    "2330": TSMC
+    "2303": UMC
+    "3711": ASE_Technology
+    "2454": MediaTek
+    "2408": Nanya_Technology
+    "3034": Novatek
+    "3443": GlobalUnichip
+    "6415": Silergy
+  # The value-chain aggregate is built from this fixed core (full monthly history
+  # from 2005), so its YoY has no composition breaks. The other names still enter
+  # the panel individually once each has 12 months of history.
+  core_companies: ["2330", "2303", "2454", "2408", "3034", "3443"]
+
+fred:
+  # Macro breadth. Public CSV endpoint, no API key. NOTE: some sandboxed
+  # networks block fred.stlouisfed.org; ingest treats FRED as best-effort and
+  # continues without it. Runs fine from a normal machine / CI.
+  csv_url: "https://fred.stlouisfed.org/graph/fredgraph.csv?id={code}"
+  series:
+    IPG3344S:   { label: ip_semiconductors_us,      release_lag_days: 16 }
+    A34SNO:     { label: new_orders_computers_electronics, release_lag_days: 34 }
+    ISRATIO:    { label: total_business_inv_to_sales, release_lag_days: 45 }
+    PCU334413334413: { label: ppi_semiconductors,   release_lag_days: 15 }
+    UNRATE:     { label: us_unemployment,           release_lag_days: 5 }
+    NASDAQCOM:  { label: nasdaq_composite,          release_lag_days: 0 }
+
+prices:
+  # Daily adjusted closes via yfinance; resampled to month-end.
+  start_date: "2004-01-01"
+  release_lag_days: 0
+  benchmarks:
+    "^SOX": phlx_semiconductor
+    "SOXX": ishares_soxx
+    "SMH": vaneck_smh
+    "QQQ": nasdaq100
+    "^GSPC": sp500
+  universe:   # equity basket for the (later) cross-sectional strategy
+    - NVDA
+    - AMD
+    - INTC
+    - MU
+    - TXN
+    - AVGO
+    - QCOM
+    - TSM
+    - ASML
+    - AMAT
+    - LRCX
+    - KLAC
+    - MRVL
+    - ADI
+    - NXPI

@@ -1,0 +1,4 @@
+model,MAE,RMSE,skill_vs_AR,dir_acc,turn_acc,corr,MAE_turns,turn_acc_turns
+ar_benchmark,0.1011,0.1392,0.0,0.7692,0.5408,0.4947,0.14,0.4805
+lightgbm,0.1017,0.1425,-0.0058,0.7051,0.4979,0.4521,0.1322,0.4286
+elasticnet,0.1236,0.1994,-0.222,0.7094,0.4893,0.0653,0.18,0.4545
