@@ -5,4 +5,4 @@ mixed-frequency public data, (2) nowcasts worldwide semiconductor billings, and
 (3) turns the signal into a cost-aware equity strategy.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

@@ -9,6 +9,7 @@ from .pipeline import (
     run_features,
     run_ingest,
     run_nowcast,
+    run_realtime,
     run_report,
     run_strategy,
 )
@@ -23,6 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("nowcast", help="walk-forward nowcast + scoreboard + figure")
     sub.add_parser("backtest", help="cycle-timing strategy: stats, deflated Sharpe, PBO")
     sub.add_parser("report", help="regenerate the written sector brief")
+    sub.add_parser("realtime", help="nowcast-timing vs factor-timing; recursive-factor check")
     args = parser.parse_args(argv)
 
     if args.cmd == "ingest":
@@ -42,6 +44,12 @@ def main(argv: list[str] | None = None) -> int:
         print(r["stats"].round(4).to_string())
     elif args.cmd == "report":
         print(run_report()["brief"])
+    elif args.cmd == "realtime":
+        r = run_realtime()
+        cols = ["ann_return", "ann_vol", "sharpe", "max_drawdown"]
+        print(f"window {r['window']}")
+        print(r["compare"][cols].round(4).to_string())
+        print(f"pseudo-real-time vs recursive factor: corr {r['factor_corr']:.3f}")
     return 0
 
 

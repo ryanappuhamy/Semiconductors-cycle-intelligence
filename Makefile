@@ -6,7 +6,7 @@ PY := python
 .PHONY: help install ingest features cycle nowcast backtest report test lint all clean
 
 help:
-	@echo "targets: install | ingest | features | cycle | nowcast | backtest | report | test | lint | all"
+	@echo "targets: install | ingest | features | cycle | nowcast | backtest | report | realtime | dashboard | test | lint | all"
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -29,13 +29,19 @@ backtest:
 report:
 	$(PY) scripts/05_report.py
 
+realtime:
+	$(PY) scripts/06_realtime.py
+
+dashboard:
+	$(PY) scripts/07_dashboard.py
+
 test:
 	$(PY) -m pytest
 
 lint:
 	$(PY) -m ruff check .
 
-all: ingest features cycle nowcast backtest report
+all: ingest features cycle nowcast backtest report realtime dashboard
 
 clean:
 	rm -rf data/raw/* data/interim/* data/processed/* reports/*.png

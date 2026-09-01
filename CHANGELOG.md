@@ -7,9 +7,42 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Planned
-- **Module 4.** Time the strategy off the forward nowcast rather than the
-  coincident factor; fully recursive real-time factor (params re-estimated each
-  month); data vintages (ALFRED); static HTML dashboard; final write-up.
+- Real-time data vintages (ALFRED) for a fully point-in-time feature set.
+- Cross-sectional strategy (stock-level tilt) alongside the index-timing overlay.
+
+## [0.5.0] — 2026-09-01
+
+Module 4: real-time checks.
+
+### Added
+- **Nowcast-based timing** (`strategy.signal.nowcast_signal` /
+  `build_weights_nowcast`) — time the overlay off the walk-forward nowcast's
+  real-time 3-month-ahead forecast instead of the coincident factor.
+- **`cycle.dfm.cycle_factor_recursive`** — fully recursive factor (DFM
+  re-estimated every month), to check the pseudo-real-time (params-fixed)
+  approximation.
+- **`scripts/06_realtime.py`** (`pipeline.run_realtime`) — the timing comparison
+  + the factor check; writes `reports/realtime_timing_compare.{png,csv}` and
+  `reports/realtime_factor_compare.png`.
+- **`report/dashboard.py`** + **`scripts/07_dashboard.py`** — one self-contained
+  `reports/dashboard.html` (images embedded as base64), CSP-safe, no external
+  requests.
+- CLI `semicycle realtime`; `Makefile` `realtime` / `dashboard` targets; `all`
+  runs the full chain.
+- Tests: `test_realtime.py`. 28 total.
+
+### Results
+- On 2009–2025 (the nowcast signal's window — drawdown-light): buy-and-hold
+  Sharpe 1.00, **nowcast timing 0.88**, **factor timing 0.83**. Timing off the
+  forward nowcast beats timing off the coincident factor (+3 pp/yr return,
+  +0.05 Sharpe) — confirming the Module 3 diagnosis that a coincident signal is
+  too late — but neither beats buy-and-hold on a window with almost no drawdown.
+- Pseudo-real-time factor vs fully recursive factor: correlation **0.94** (over
+  2007–, once all six inputs have history). The parameter-fixing shortcut in
+  Module 2 does not distort the factor path.
+
+### Changed
+- Version 0.4.0 → 0.5.0.
 
 ## [0.4.0] — 2026-09-01
 
@@ -154,7 +187,8 @@ one of four cycle phases, and produced a matplotlib dashboard plus an
 AI-generated sector brief. All data from yfinance. Limited by ~5 usable quarterly
 observations after alignment.
 
-[Unreleased]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/releases/tag/v0.2.0

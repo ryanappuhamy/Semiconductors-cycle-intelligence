@@ -248,9 +248,47 @@ fasi, rendimento per fase, scheda statistiche). `ai_brief.py` → `report.brief`
 
 ---
 
+## Modulo 4 — controlli real-time
+
+### Timing sul nowcast forward invece che sul fattore coincidente
+
+Il Modulo 3 diceva: un segnale *coincidente* sul ciclo arriva tardi per il timing
+azionario. Verifica diretta — usare come segnale la previsione OOS del nowcast
+(billings a +3 mesi, `pred_lightgbm` dalla walk-forward, genuinamente as-of ogni
+mese) invece del livello del fattore.
+
+Sulla finestra 2009-02 … 2025-09 (dove esiste il segnale nowcast — pochi drawdown):
+
+| | rend. ann. | vol | Sharpe | max DD |
+|---|---|---|---|---|
+| buy & hold | +23.8% | 24.6% | 1.00 | −41% |
+| **nowcast timing (h=3)** | +20.2% | 24.4% | **0.88** | −46% |
+| factor timing | +16.8% | 21.6% | 0.83 | −41% |
+
+**Il timing sul nowcast batte il timing sul fattore** (+0.05 Sharpe, +3.4 pp/anno
+di rendimento) — la diagnosi del Modulo 3 era giusta. Ma nessuno dei due batte il
+buy & hold su una finestra che ha avuto un solo vero drawdown (2022): il valore
+del cycle-timing è la protezione dai crolli, e qui non c'erano crolli da cui
+proteggersi.
+
+### Fattore pseudo-real-time vs completamente ricorsivo
+
+`cycle_factor_pit` (Modulo 2) filtra lo stato di Kalman ma tiene i parametri
+stimati su tutto il campione. `cycle_factor_recursive` ri-stima il DFM da capo
+ogni mese (~240 fit). **Correlazione 0.94** sul periodo dove entrambi sono
+stabili (2007+, quando tutti e 6 gli input hanno storia). La scorciatoia di
+tenere i parametri fissi non distorce il fattore.
+
+### Dashboard
+
+`scripts/07_dashboard.py` → `reports/dashboard.html`: una pagina unica,
+self-contained (immagini in base64, nessuna richiesta esterna) con ciclo,
+nowcast, strategia, controlli real-time e brief.
+
+---
+
 ## Cosa manca ancora
 
-- **Modulo 4:** provare a fare il timing sul **nowcast forward** (billings +3/+6
-  mesi) invece che sul fattore coincidente; fattore real-time completamente
-  ricorsivo (parametri ri-stimati ogni mese); vintage ALFRED; dashboard HTML;
-  scrittura finale.
+- Vintage ALFRED reali → feature set completamente point-in-time.
+- Strategia cross-section (tilt a livello di singolo titolo) accanto all'overlay
+  di timing sull'indice.

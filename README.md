@@ -45,7 +45,8 @@ src/semicycle/
   nowcast/         supervised dataset, model zoo, purged/embargoed walk-forward CV
   strategy/        cycle-timing signal + cost-aware backtest + deflated Sharpe / PBO
   report/          figures + written brief
-scripts/           00_ingest -> 01_build_features -> 02_fit_cycle -> 03_nowcast -> 04_backtest -> 05_report
+scripts/           00_ingest -> 01_build_features -> 02_fit_cycle -> 03_nowcast
+                   -> 04_backtest -> 05_report -> 06_realtime -> 07_dashboard
 data/              raw/ (immutable pulls) -> processed/ (DuckDB + panel.parquet)
 ```
 
@@ -213,6 +214,16 @@ positive Sharpe is real but modest, and that chasing the best-in-grid config
 would be overfitting. `reports/strategy_dashboard.png`,
 `reports/semiconductor_cycle_brief.txt`.
 
+**Module 4 (real-time checks).** Timing the overlay off the *forward nowcast*
+(the walk-forward's real-time 3-month-ahead forecast) instead of the coincident
+factor lifts the Sharpe from 0.83 to **0.88** and the return by ~3 pp/yr — a
+coincident cycle signal really is too late for equity timing. Still short of
+buy-and-hold (0.997) on 2009–2025, a window with almost no drawdown to protect
+against. Separately, the pseudo-real-time factor (Module 2, parameters fixed)
+correlates **0.94** with a fully recursive one (parameters re-estimated every
+month) — the shortcut holds. `make dashboard` bundles it all into a
+self-contained `reports/dashboard.html`.
+
 ---
 
 ## Reproduce
@@ -225,6 +236,8 @@ make cycle                   # DFM factor + Bry-Boschan phases -> reports/cycle_
 make nowcast                 # walk-forward scoreboard + reports/nowcast_oos_h*.png
 make backtest                # cycle-timing strategy: stats, deflated Sharpe, PBO
 make report                  # written sector brief
+make realtime                # nowcast-timing vs factor-timing; recursive-factor check
+make dashboard               # -> reports/dashboard.html (self-contained)
 make test                    # anti-leakage + backtest-mechanics + smoke tests
 make lint                    # ruff
 ```
@@ -244,9 +257,10 @@ WSTS + Taiwan + market data.
 - **Module 3 — the strategy. Done** (see [Results](#results)). Cost-aware
   cycle-timing backtest with deflated Sharpe / PBO; the honest finding is that
   it is a risk overlay, not alpha.
-- **Module 4.** Time the strategy off the *forward nowcast* rather than the
-  coincident factor; a fully recursive real-time factor (params re-estimated each
-  month); data vintages (ALFRED); a static HTML dashboard; final write-up.
+- **Module 4 — real-time checks. Done** (see [Results](#results)). Nowcast-based
+  timing, a fully recursive factor, and a self-contained HTML dashboard.
+- **Next.** Real-time data vintages (ALFRED) for a fully point-in-time feature
+  set; a cross-sectional stock-level tilt alongside the index-timing overlay.
 
 ---
 
