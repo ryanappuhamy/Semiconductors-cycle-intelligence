@@ -1,0 +1,4 @@
+,months,ann_return,ann_vol,sharpe,sortino,max_drawdown,calmar,hit_rate,skew,kurtosis
+buy & hold,200.0,0.238,0.246,0.9971,1.7311,-0.4071,0.5847,0.63,-0.114,2.9257
+factor timing,200.0,0.1675,0.216,0.8286,1.2247,-0.4088,0.4096,0.6,-0.1122,4.3456
+nowcast timing (h=3),200.0,0.2022,0.2437,0.8828,1.373,-0.4555,0.444,0.61,-0.2384,3.6379

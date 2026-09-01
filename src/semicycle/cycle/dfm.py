@@ -123,6 +123,47 @@ def cycle_factor_pit(cfg: Config) -> pd.Series:
     return factor.rename("cycle_factor")
 
 
+def cycle_factor_recursive(cfg: Config, *, step: int = 1, min_months: int = 72) -> pd.Series:
+    """Fully recursive real-time factor: at each month re-estimate the DFM on data
+    up to that month and take the last smoothed value. Slower than
+    :func:`cycle_factor_pit` (which fixes the parameters) — used to check that the
+    pseudo-real-time approximation does not distort the factor path.
+    """
+    from ..features.build import _load_tidy, _monthly_index
+    from ..features.transforms import as_of_panel
+
+    store = Store(cfg.duckdb_path)
+    tidy = _load_tidy(store)
+    pit = as_of_panel(tidy, _monthly_index(tidy))
+    x_full = pd.DataFrame(
+        {
+            s: _apply_transform(pit[s].astype(float), spec)
+            for s, spec in cfg.params.cycle.inputs.items()
+            if s in pit
+        }
+    ).replace([np.inf, -np.inf], np.nan)
+    if cfg.params.cycle.start:
+        x_full = x_full.loc[x_full.index >= pd.Timestamp(cfg.params.cycle.start)]
+    x_full = x_full.dropna(how="all")
+
+    ref = cfg.params.cycle.sign_reference
+    vals: dict[pd.Timestamp, float] = {}
+    months = x_full.index[min_months::step]
+    for t in months:
+        x = x_full.loc[:t]
+        try:
+            res = _fit_dfm(x, cfg)
+            f = res.factors.smoothed.iloc[:, 0]
+            if ref in x and x[ref].corr(f) < 0:
+                f = -f
+            vals[t] = float(f.iloc[-1])
+        except Exception:  # noqa: BLE001, PERF203 - skip a fold that fails to converge
+            continue
+
+    out = pd.Series(vals).sort_index()
+    return ((out - out.mean()) / out.std()).rename("cycle_factor_recursive")
+
+
 @dataclass
 class CycleFactor:
     factor: pd.Series           # the semiconductor cycle index (standardised)

@@ -238,3 +238,81 @@ def run_report(cfg: Config | None = None) -> dict:
     out = cfg.reports_dir / "semiconductor_cycle_brief.txt"
     out.write_text(brief, encoding="utf-8")
     return {"brief": brief, "path": out, "strategy": strat, "phases": dated["phases"]}
+
+
+# --- module 4: real-time checks ------------------------------------
+
+
+def run_realtime(cfg: Config | None = None) -> dict:
+    """(1) time the strategy off the forward nowcast instead of the coincident
+    factor; (2) check the pseudo-real-time factor against a fully recursive one."""
+    cfg = cfg or load_config()
+    import matplotlib.pyplot as plt
+
+    from .cycle.dfm import cycle_factor_pit, cycle_factor_recursive
+    from .strategy.backtest import monthly_returns, run_backtest
+    from .strategy.signal import build_weights, build_weights_nowcast
+    from .strategy.stats import perf_stats
+
+    s = cfg.params.strategy
+    panel = pd.read_parquet(cfg.panel_path)
+    store = Store(cfg.duckdb_path)
+    prices = (
+        store.read("prices").assign(date=lambda d: pd.to_datetime(d["date"]))
+        .pivot_table(index="date", columns="series", values="value")
+    )
+    asset_ret = monthly_returns(prices[s.asset])
+
+    # (1) factor-timing vs nowcast-timing vs buy & hold ---------------------
+    h = cfg.params.target.horizons[1]
+    oos = pd.read_csv(
+        cfg.reports_dir / f"nowcast_oos_h{h}.csv", parse_dates=["date"]
+    ).set_index("date")
+    bh_w = pd.Series(1.0, index=asset_ret.index).loc[s.start:s.end]
+    runs = {
+        "buy & hold": run_backtest(bh_w, asset_ret, cost_bps=0)["strategy_ret"],
+        "factor timing": run_backtest(
+            build_weights(panel, s)["weight"], asset_ret, cost_bps=s.cost_bps
+        )["strategy_ret"],
+        f"nowcast timing (h={h})": run_backtest(
+            build_weights_nowcast(oos, s)["weight"], asset_ret, cost_bps=s.cost_bps
+        )["strategy_ret"],
+    }
+    common = None
+    for r in runs.values():
+        common = r.index if common is None else common.intersection(r.index)
+    runs = {k: v.reindex(common) for k, v in runs.items()}
+    compare = pd.DataFrame({k: perf_stats(v) for k, v in runs.items()}).T
+    win = f"{common.min():%Y-%m}..{common.max():%Y-%m}"
+
+    cum = pd.DataFrame({k: (1 + v).cumprod() for k, v in runs.items()})
+    with plt.rc_context({"figure.figsize": (11, 5), "figure.dpi": 120, "axes.grid": True,
+                         "grid.alpha": 0.25, "axes.spines.top": False, "axes.spines.right": False}):
+        ax = cum.plot(logy=True, color=["0.45", "#1f77b4", "#d62728"], lw=1.6)
+        ax.set_title(f"Timing the cycle: coincident factor vs forward nowcast "
+                     f"(SOXX, {s.cost_bps:.0f} bps, {win})")
+        ax.set_ylabel("growth of $1 (log)")
+        ax.legend(frameon=False)
+        fig1 = cfg.reports_dir / "realtime_timing_compare.png"
+        ax.figure.savefig(fig1, bbox_inches="tight")
+        plt.close(ax.figure)
+
+    # (2) pseudo-real-time factor vs fully recursive ----------------------
+    pit = cycle_factor_pit(cfg)
+    rec = cycle_factor_recursive(cfg, step=1)
+    aligned = pd.concat([pit.rename("filtered (params fixed)"),
+                         rec.rename("recursive (params re-fit)")], axis=1).dropna()
+    factor_corr = float(aligned.iloc[:, 0].corr(aligned.iloc[:, 1]))
+    with plt.rc_context({"figure.figsize": (11, 4.5), "figure.dpi": 120, "axes.grid": True,
+                         "grid.alpha": 0.25, "axes.spines.top": False, "axes.spines.right": False}):
+        ax = aligned.plot(color=["#1f77b4", "black"], lw=1.3)
+        ax.axhline(0, color="0.5", lw=0.8)
+        ax.set_title(f"Pseudo-real-time vs fully recursive cycle factor  (corr {factor_corr:.3f})")
+        ax.legend(frameon=False)
+        fig2 = cfg.reports_dir / "realtime_factor_compare.png"
+        ax.figure.savefig(fig2, bbox_inches="tight")
+        plt.close(ax.figure)
+
+    compare.round(4).to_csv(cfg.reports_dir / "realtime_timing_compare.csv")
+    return {"compare": compare, "window": win, "factor_corr": factor_corr,
+            "figures": [fig1, fig2], "recursive_factor": rec, "pit_factor": pit}
