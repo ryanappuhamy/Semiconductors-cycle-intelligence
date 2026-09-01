@@ -29,6 +29,9 @@ Module 4: real-time checks.
   requests.
 - CLI `semicycle realtime`; `Makefile` `realtime` / `dashboard` targets; `all`
   runs the full chain.
+- `scripts/_gen_artifact.py` — emits `reports/dashboard_artifact.html`, the
+  body-only designed page for publishing via Claude Code's Artifact tool.
+- `LICENSE` (MIT); README hero image.
 - Tests: `test_realtime.py`. 28 total.
 
 ### Results

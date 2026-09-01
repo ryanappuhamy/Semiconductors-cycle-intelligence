@@ -12,6 +12,8 @@ observations from a single data vendor, a hand-weighted z-score index, and
 in-sample averages. This version keeps the intuition and replaces the
 foundation. See [Relationship to the previous project](#relationship-to-the-previous-project).
 
+![The latent semiconductor cycle factor with its Bry–Boschan phases, over WSTS 3-month-average YoY billings growth](reports/cycle_factor.png)
+
 ---
 
 ## The cycle, and why it is tradable
