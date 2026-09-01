@@ -6,8 +6,7 @@ PY := python
 .PHONY: help install ingest features cycle nowcast backtest report test lint all clean
 
 help:
-	@echo "targets: install | ingest | features | cycle | nowcast | test | lint | all"
-	@echo "  (backtest | report are stubs, landing in Module 3)"
+	@echo "targets: install | ingest | features | cycle | nowcast | backtest | report | test | lint | all"
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -36,7 +35,7 @@ test:
 lint:
 	$(PY) -m ruff check .
 
-all: ingest features cycle nowcast
+all: ingest features cycle nowcast backtest report
 
 clean:
 	rm -rf data/raw/* data/interim/* data/processed/* reports/*.png

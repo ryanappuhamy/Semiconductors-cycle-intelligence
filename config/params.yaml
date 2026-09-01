@@ -79,7 +79,26 @@ models:
     colsample_bytree: 0.8
     random_state: 42
 
-strategy:      # consumed in Module 3
+strategy:
   rebalance: month_end
-  cost_bps: 10
-  vol_target_annual: 0.20
+  cost_bps: 10                # round-trip transaction cost, basis points
+  vol_target_annual: 0.20     # (reserved) target vol for a scaled variant
+  asset: px_SOXX              # tradable semiconductor vehicle (iShares SOXX, div-adj)
+  signal_zwindow: 36          # expanding z-score warm-up on the cycle signal
+  level_weight: 1.0           # weight on the factor level in the timing signal
+  momentum_weight: 1.0        # weight on the factor's 6-month change
+  base_weight: 1.0            # fully invested when the signal is neutral
+  gain: 0.40                  # signal -> weight sensitivity
+  min_weight: 0.0
+  max_weight: 1.25            # a little leverage when the cycle is strong
+  start: "2005-07-01"         # first month with enough real-time signal history
+  end: "2025-12-31"           # yfinance semi prices show implausible +30-40% monthly
+                              # moves from 2026-04 (ETFs moving 2x their top holding);
+                              # same era as the corrupt WSTS 2026 rows -> capped
+  cscv_partitions: 10         # S in the CSCV computation of the PBO
+  # grid the deflated Sharpe ratio and the PBO account for (2^4 = 16 configs)
+  grid:
+    level_weight: [0.5, 1.0]
+    momentum_weight: [0.5, 1.0]
+    gain: [0.30, 0.50]
+    max_weight: [1.0, 1.25]

@@ -1,0 +1,25 @@
+SEMICONDUCTOR CYCLE BRIEF -- 2026-08
+
+Cycle position
+  The dynamic factor model places the semiconductor cycle in Mid Cycle
+  (since 2025-09), with the latent factor at +1.73
+  standard deviations -- above its long-run average, expansion.
+
+Nowcast
+  Out-of-sample, the feature model (with the cycle factor) beats the
+  autoregressive benchmark by +3.5% on 3-month-ahead
+  billings-growth MAE, and more at turning points.
+
+Strategy stance
+  The cycle-timing overlay currently holds 1.13x SOXX.
+  Over 2005-2025 it earned a Sharpe of 0.59 against
+  0.7 for buy-and-hold -- i.e. it did NOT add risk-adjusted
+  return -- while cutting the maximum drawdown from -60%
+  to -54%. It is a risk overlay, not an alpha source.
+
+Robustness
+  Deflated Sharpe ratio 0.99, probability of backtest
+  overfitting 32% across the 16-config grid. Read the strategy as
+  a de-risking rule, and do not go looking for the config that "wins".
+
+(Local template -- set ANTHROPIC_API_KEY for a written brief.)

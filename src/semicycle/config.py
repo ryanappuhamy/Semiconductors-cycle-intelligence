@@ -118,6 +118,19 @@ class StrategyCfg(BaseModel):
     rebalance: str
     cost_bps: float
     vol_target_annual: float
+    asset: str = "px_SOXX"          # the tradable semiconductor vehicle
+    signal_zwindow: int = 36        # expanding z-score warm-up for the cycle signal
+    level_weight: float = 1.0       # weight on the factor level in the signal
+    momentum_weight: float = 1.0    # weight on the 6m change in the signal
+    base_weight: float = 0.6        # target weight when the signal is neutral
+    gain: float = 0.35              # signal -> weight sensitivity
+    min_weight: float = 0.0
+    max_weight: float = 1.5
+    start: str = "2005-07-01"       # first month with enough signal history
+    end: str | None = None          # cap the backtest (bad recent price data)
+    cscv_partitions: int = 10       # S in the CSCV / PBO computation
+    # the configs the deflated Sharpe / PBO account for (grid searched)
+    grid: dict[str, list[float]] = Field(default_factory=dict)
 
 
 class Params(BaseModel):

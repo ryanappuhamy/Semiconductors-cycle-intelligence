@@ -43,8 +43,8 @@ src/semicycle/
   features/        point-in-time alignment (as_of_panel) + stationary transforms -> panel
   cycle/           dynamic factor model (latent cycle index) + Bry-Boschan phase dating
   nowcast/         supervised dataset, model zoo, purged/embargoed walk-forward CV
-  strategy/        [Module 3] cycle-driven equity strategy + honest backtest stats
-  report/          figures + brief
+  strategy/        cycle-timing signal + cost-aware backtest + deflated Sharpe / PBO
+  report/          figures + written brief
 scripts/           00_ingest -> 01_build_features -> 02_fit_cycle -> 03_nowcast -> 04_backtest -> 05_report
 data/              raw/ (immutable pulls) -> processed/ (DuckDB + panel.parquet)
 ```
@@ -140,6 +140,29 @@ vs contracting), turning-point accuracy, correlation.
 
 ---
 
+## The strategy and its honesty checks
+
+`strategy/` turns the point-in-time cycle signal into a monthly target weight on
+SOXX (`clip(base + gain·s, 0, max)`), runs it through a backtest with an explicit
+timing convention and 10 bps cost, and then subjects it to the two statistics
+that matter after a parameter search:
+
+- **Deflated Sharpe ratio** (Bailey & López de Prado 2014) — the probability the
+  true Sharpe is > 0 *after* accounting for having picked the best of `N`
+  configurations. Uses the return series' skew and kurtosis and the spread of
+  Sharpes across the grid.
+- **Probability of backtest overfitting** (CSCV; Bailey, Borwein, López de Prado,
+  Zhu 2017) — split the sample into `S` blocks; for every way of choosing `S/2`
+  as in-sample, take the config with the best in-sample Sharpe and check where it
+  ranks out-of-sample. PBO = share of splits where that config lands below the
+  out-of-sample median.
+
+The 16-config grid (`strategy.grid` in `config/params.yaml`) is the search these
+two account for. `strategy.stats.regime_attribution` then breaks the strategy's
+return down by the Module 2 cycle phase.
+
+---
+
 ## Results
 
 240 out-of-sample months (2006–2025), expanding walk-forward with purge + embargo.
@@ -166,6 +189,30 @@ this benchmark would be a leak, not a discovery.
 information that the raw indicators, taken individually, do not — which is the
 whole point of estimating it.
 
+**Module 3 (the strategy).** A cycle-timing overlay on SOXX — target weight
+`clip(1.0 + 0.4·s, 0, 1.25)` from the point-in-time cycle signal `s`, monthly
+rebalance, 10 bps cost. 2005–2025, vs buy-and-hold:
+
+| | strategy | buy & hold SOXX |
+|---|---|---|
+| annualised return | +10.9% | +15.5% |
+| annualised vol | 21.6% | 25.0% |
+| **Sharpe** | **0.59** | **0.70** |
+| max drawdown | −54% | −60% |
+
+The overlay cuts vol and drawdown but **not** below buy-and-hold's Sharpe — the
+same ~0.1 Sharpe gap holds across every asset (SMH, an equal-weight basket) and
+every sub-period. It is a **risk overlay, not an alpha source**: semiconductor
+equities are forward-looking and largely price the fundamental cycle before it
+reaches billings. Strategy return by phase is +23% / +20% annualised in Early /
+Late Cycle and −8% in Downturn — the de-risking works directionally.
+
+The **deflated Sharpe ratio** (0.99 = P[true Sharpe > 0] after N = 16 grid
+configs) and the **probability of backtest overfitting** (0.32, CSCV) confirm the
+positive Sharpe is real but modest, and that chasing the best-in-grid config
+would be overfitting. `reports/strategy_dashboard.png`,
+`reports/semiconductor_cycle_brief.txt`.
+
 ---
 
 ## Reproduce
@@ -173,11 +220,17 @@ whole point of estimating it.
 ```bash
 pip install -e ".[dev]"      # Python 3.10+
 make ingest                  # WSTS + Taiwan + FRED + prices -> data/raw + DuckDB
-make features                # -> data/processed/panel.parquet
+make features                # -> data/processed/panel.parquet (incl. the cycle factor)
+make cycle                   # DFM factor + Bry-Boschan phases -> reports/cycle_factor.png
 make nowcast                 # walk-forward scoreboard + reports/nowcast_oos_h*.png
-make test                    # anti-leakage + smoke tests
+make backtest                # cycle-timing strategy: stats, deflated Sharpe, PBO
+make report                  # written sector brief
+make test                    # anti-leakage + backtest-mechanics + smoke tests
 make lint                    # ruff
 ```
+
+`make report` writes a local template brief; set `ANTHROPIC_API_KEY` for a
+Claude-written one (the previous project's `ai_brief.py`, migrated).
 
 No API keys. FRED is best-effort — some sandboxed networks block
 `fred.stlouisfed.org`; the pipeline continues without it and still trains on
@@ -188,14 +241,12 @@ WSTS + Taiwan + market data.
 ## Roadmap
 
 - **Module 2 — the cycle factor. Done** (see [The cycle factor](#the-cycle-factor)).
-- **Module 3 — the strategy.** `strategy/`: cycle level + momentum → a timing
-  signal on `^SOX`/`SMH` and a cross-sectional tilt across the universe. Monthly
-  rebalance, explicit costs, and statistics that quantify overfitting risk:
-  Sharpe, **deflated Sharpe ratio**, **probability of backtest overfitting**
-  (CSCV), turnover, per-regime performance. Migrates the old project's dashboard
-  and written brief.
-- **Module 4.** Fully recursive real-time factor, data vintages (ALFRED), a
-  static HTML dashboard, final write-up.
+- **Module 3 — the strategy. Done** (see [Results](#results)). Cost-aware
+  cycle-timing backtest with deflated Sharpe / PBO; the honest finding is that
+  it is a risk overlay, not alpha.
+- **Module 4.** Time the strategy off the *forward nowcast* rather than the
+  coincident factor; a fully recursive real-time factor (params re-estimated each
+  month); data vintages (ALFRED); a static HTML dashboard; final write-up.
 
 ---
 
@@ -207,10 +258,10 @@ WSTS + Taiwan + market data.
 | 4-phase taxonomy + level×direction rules | **Kept** — now the output of Bry–Boschan dating on the factor (`cycle/dating.py`) |
 | yfinance daily prices | **Migrated** to `io/prices.py` (+ month-end resampling) |
 | expanding-window `zscore` | **Migrated** to `features/transforms.py` with anti-leakage tests |
-| dashboard, AI brief | **Migrated** in Module 3 |
+| dashboard, AI brief | **Migrated** — `report/plots.strategy_dashboard`, `report/brief.py` (Claude call + local fallback) |
 | yfinance *fundamentals* + synthetic annual→quarterly backfill / back-extrapolation | **Removed** — replaced by WSTS (40y) + Taiwan revenue (20y) + FRED |
 | hand-weighted z-score composite | **Replaced** by an estimated dynamic factor (`cycle/dfm.py`) |
-| in-sample forward-return averages (n = 1–3 per phase) | **Replaced** by purged walk-forward nowcast (+ a cost-aware backtest in Module 3) |
+| in-sample forward-return averages (n = 1–3 per phase) | **Replaced** by purged walk-forward nowcast + a cost-aware backtest with deflated Sharpe / PBO |
 | single scripts | **Replaced** by a package, config, tests, CI |
 
 ---
