@@ -1,11 +1,17 @@
-"""Module 3 (planned): assemble the final dashboard and written brief.
+"""Assemble the sector brief (and refresh the strategy dashboard).
 
-Migrates the previous project's `dashboard.py` (multi-panel matplotlib) and
-`ai_brief.py` (structured sector brief), adapted to the new cycle factor and
-strategy outputs.
-
-Not implemented yet — see the roadmap in README.md.
+Migrates the previous project's ai_brief.py: structured prompt -> Claude, with a
+deterministic local template when ANTHROPIC_API_KEY is not set.
 """
 
+import warnings
+
+from semicycle.pipeline import run_report
+
+warnings.filterwarnings("ignore")
+
 if __name__ == "__main__":
-    raise SystemExit("05_report.py is a Module 3 stub — not implemented yet.")
+    r = run_report()
+    print(r["brief"])
+    print(f"\nbrief:     {r['path']}")
+    print(f"dashboard: {r['strategy']['figures'][1]}")

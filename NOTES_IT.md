@@ -189,11 +189,68 @@ come `cycle_factor`, `cycle_factor__chg3`, `cycle_factor__chg6`.
 
 ---
 
+## Modulo 3 — la strategia (e il risultato onesto)
+
+### Il segnale e il backtest
+
+Dal segnale point-in-time del ciclo (`cycle_factor` + la sua variazione a 6 mesi,
+z-score a finestra espansiva) a un peso target su SOXX:
+
+```
+peso_T = clip( base + gain · segnale_T ,  0 ,  max )      base=1.0  gain=0.4  max=1.25
+```
+
+Ribilanciamento mensile, **costo 10 bps** sul turnover. Convenzione temporale
+senza look-ahead: il peso deciso a fine mese `t` frutta il rendimento del mese
+`t+1`; il costo del trade grava su `t+1`.
+
+Nota dati: i prezzi yfinance dei semiconduttori mostrano movimenti mensili
+impossibili da aprile 2026 (ETF che si muovono 2x il loro titolo maggiore) — la
+stessa era dei dati WSTS 2026 corrotti. Backtest tagliato a dicembre 2025.
+
+### Il risultato (2005–2025, vs buy & hold SOXX)
+
+| | strategia | buy & hold |
+|---|---|---|
+| rendimento ann. | +10.9% | +15.5% |
+| volatilità ann. | 21.6% | 25.0% |
+| **Sharpe** | **0.59** | **0.70** |
+| max drawdown | −54% | −60% |
+
+**La strategia NON batte il buy & hold in termini risk-adjusted.** Taglia
+volatilità e drawdown, ma il rendimento cala di più: lo Sharpe resta ~0.1 sotto.
+E questo gap è stabile: vale con SMH, con un basket equal-weight, e in ogni
+sotto-periodo. Per regime: +23% ann. in Early, +20% in Late, **−8% in Downturn**
+— il de-risking funziona nella direzione giusta, ma non abbastanza.
+
+**Perché.** Le azioni semi sono *forward-looking*: prezzano il ciclo fondamentale
+prima che si veda nei billings. Un segnale coincidente sul ciclo arriva tardi per
+il timing azionario (si de-risk nel minimo e si perde il rimbalzo — visibile
+nella equity curve, 2009–2013). Il valore del segnale è come **overlay di
+rischio**, non come fonte di alfa.
+
+### Le due statistiche anti-overfitting
+
+- **Deflated Sharpe ratio = 0.99** — probabilità che lo Sharpe *vero* sia > 0
+  dopo aver considerato le 16 config della griglia. Alto perché le 16 config
+  danno risposte simili (poca "ricerca" da scontare) e lo Sharpe positivo è
+  robusto — *non* perché batta il benchmark.
+- **PBO (CSCV) = 0.32** — ~1/3 di probabilità che la config scelta sia
+  overfittata rispetto alle altre. Moderato. La lezione: leggere la strategia
+  come regola di de-risking, non andare a caccia della config che "vince".
+
+### Migrazione dal v1
+
+`dashboard.py` → `report.plots.strategy_dashboard` (4 pannelli: equity, peso sulle
+fasi, rendimento per fase, scheda statistiche). `ai_brief.py` → `report.brief`
+(prompt strutturato → Claude, con fallback a template locale se manca
+`ANTHROPIC_API_KEY`).
+
+---
+
 ## Cosa manca ancora
 
-- **Modulo 3:** strategia equity guidata dal ciclo (timing su ^SOX/SMH + tilt
-  cross-section), backtest mensile con costi, e statistiche oneste: Sharpe,
-  **deflated Sharpe ratio**, **probabilità di overfitting del backtest** (CSCV),
-  turnover, performance per regime. Migrazione di `dashboard.py` e `ai_brief.py`.
-- **Modulo 4:** fattore real-time completamente ricorsivo, vintage ALFRED,
-  dashboard HTML, scrittura finale.
+- **Modulo 4:** provare a fare il timing sul **nowcast forward** (billings +3/+6
+  mesi) invece che sul fattore coincidente; fattore real-time completamente
+  ricorsivo (parametri ri-stimati ogni mese); vintage ALFRED; dashboard HTML;
+  scrittura finale.

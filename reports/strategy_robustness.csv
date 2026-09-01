@@ -1,0 +1,10 @@
+,value
+sharpe_ann,0.5898
+sharpe_per_period,0.1703
+expected_max_sharpe_H0,0.0187
+deflated_sharpe_ratio,0.9897
+n_trials,16.0
+pbo,0.3214
+logit_median,0.6061
+n_splits,252.0
+n_configs,16.0

@@ -7,12 +7,53 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Planned
-- **Module 3 — strategy.** Cycle-driven equity strategy on `^SOX`/`SMH` + a
-  cross-sectional tilt; monthly rebalance with explicit costs; deflated Sharpe
-  ratio, probability of backtest overfitting (CSCV), turnover, per-regime stats.
-  Migrates the v1 dashboard and written brief.
-- **Module 4.** Fully recursive real-time factor, data vintages (ALFRED), static
-  HTML dashboard, final write-up.
+- **Module 4.** Time the strategy off the forward nowcast rather than the
+  coincident factor; fully recursive real-time factor (params re-estimated each
+  month); data vintages (ALFRED); static HTML dashboard; final write-up.
+
+## [0.4.0] — 2026-09-01
+
+Module 3: the cycle-timing strategy and its honesty checks.
+
+### Added
+- **`strategy/signal.py`** — point-in-time cycle signal (expanding z-score of the
+  DFM factor + its 6-month change) → a long-only target weight on SOXX,
+  `clip(base + gain·s, min, max)`.
+- **`strategy/backtest.py`** — monthly backtest engine with an explicit no-look-
+  ahead timing convention and transaction costs on turnover; `grid_returns()`
+  produces the per-config return matrix for the robustness stats.
+- **`strategy/stats.py`** — `perf_stats` (Sharpe, Sortino, max drawdown, Calmar,
+  skew/kurtosis); **`deflated_sharpe_ratio`** (Bailey & López de Prado 2014);
+  **`probability_of_backtest_overfitting`** (CSCV; Bailey, Borwein, López de
+  Prado, Zhu 2017); `regime_attribution` by the Module 2 cycle phase.
+- **`scripts/04_backtest.py`**, **`scripts/05_report.py`**;
+  `report.plots.equity_curve` + `strategy_dashboard`; **`report/brief.py`**
+  (migrated `ai_brief.py` — structured prompt → Claude, local template fallback).
+- `config/params.yaml` → `strategy:` (asset, signal weights, 16-config grid,
+  CSCV partitions, backtest window).
+- CLI: `semicycle backtest`, `semicycle report`. `Makefile`: `all` runs the
+  full chain; `backtest` / `report` are first-class targets.
+- Tests: `test_strategy.py` (backtest mechanics, deflated Sharpe, PBO edge
+  cases). 25 total.
+
+### Results
+- 2005–2025, 10 bps cost, vs buy-and-hold SOXX: strategy Sharpe **0.59** vs
+  **0.70**; annualised return +10.9% vs +15.5%; vol 21.6% vs 25.0%; max drawdown
+  −54% vs −60%. The overlay cuts risk but not below buy-and-hold's Sharpe — the
+  ~0.1 gap is stable across assets (SMH, equal-weight basket) and sub-periods.
+  A **risk overlay, not alpha**: semiconductor equities price the fundamental
+  cycle before it reaches billings.
+- By phase: +23% / +20% annualised in Early / Late Cycle, −8% in Downturn.
+- Deflated Sharpe ratio 0.99 (P[true SR > 0] over N = 16 configs); PBO 0.32
+  (CSCV, 252 splits).
+
+### Fixed
+- WSTS / price data: backtest capped at 2025-12 — yfinance semiconductor prices
+  show implausible +30–40% monthly moves from 2026-04 (ETFs moving 2× their top
+  holding), the same era as the corrupt WSTS 2026 rows.
+
+### Changed
+- Version 0.3.0 → 0.4.0.
 
 ## [0.3.0] — 2026-09-01
 
@@ -113,7 +154,8 @@ one of four cycle phases, and produced a matplotlib dashboard plus an
 AI-generated sector brief. All data from yfinance. Limited by ~5 usable quarterly
 observations after alignment.
 
-[Unreleased]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ryanappuhamy/Semiconductors-cycle-intelligence/releases/tag/v1

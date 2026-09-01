@@ -3,16 +3,26 @@
 from __future__ import annotations
 
 import argparse
+import warnings
 
-from .pipeline import run_features, run_ingest, run_nowcast
+from .pipeline import (
+    run_features,
+    run_ingest,
+    run_nowcast,
+    run_report,
+    run_strategy,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
+    warnings.filterwarnings("ignore")
     parser = argparse.ArgumentParser(prog="semicycle")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("ingest", help="download all sources into DuckDB + parquet")
-    sub.add_parser("features", help="build the modelling panel")
+    sub.add_parser("features", help="build the modelling panel (incl. the cycle factor)")
     sub.add_parser("nowcast", help="walk-forward nowcast + scoreboard + figure")
+    sub.add_parser("backtest", help="cycle-timing strategy: stats, deflated Sharpe, PBO")
+    sub.add_parser("report", help="regenerate the written sector brief")
     args = parser.parse_args(argv)
 
     if args.cmd == "ingest":
@@ -26,6 +36,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\n=== horizon h={h} | {res['n_oos']} OOS months | "
                   f"{res['n_features']} features ===")
             print(res["scoreboard"].round(4).to_string())
+    elif args.cmd == "backtest":
+        r = run_strategy()
+        print(r["card"])
+        print(r["stats"].round(4).to_string())
+    elif args.cmd == "report":
+        print(run_report()["brief"])
     return 0
 
 

@@ -1,0 +1,11 @@
+,strategy,buy_hold_SOXX
+months,244.0,244.0
+ann_return,0.1093,0.1547
+ann_vol,0.2161,0.2504
+sharpe,0.5898,0.7029
+sortino,0.8528,1.1161
+max_drawdown,-0.5411,-0.5973
+calmar,0.202,0.2591
+hit_rate,0.582,0.6066
+skew,-0.1067,-0.2085
+kurtosis,4.2736,3.1241
